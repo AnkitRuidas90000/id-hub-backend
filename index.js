@@ -2,9 +2,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
-mongoose.set('strictQuery', true); // Fix the strictQuery warning
+const fs = require('fs');
+const path = require('path');
+mongoose.set('strictQuery', true);
 
 const app = express();
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 // Middleware
 app.use(cors());
@@ -12,7 +20,7 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://ANKIT:Sh9WH35UJFquBDId@ac-h8ek3ux-shard-00-00.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-01.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-02.aqk7pvx.mongodb.net:27017/idhub?ssl=true&replicaSet=atlas-osji8u-shard-0&authSource=admin&retryWrites=true&w=majority')
+  .connect(process.env.MONGODB_URI || 'mongodb+srv://ANKIT:Sh9WH35UJFquBDId@cluster0.aqk7pvx.mongodb.net/idhub?retryWrites=true&w=majority&appName=Cluster0')
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
