@@ -1,16 +1,22 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // Add CORS
+const cors = require('cors');
+mongoose.set('strictQuery', true); // Fix the strictQuery warning
 const app = express();
 
-// Middleware
-app.use(cors()); // Allow frontend to call backend
+app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
 mongoose
   .connect(
-    'mongodb+srv://ANKIT:mkf0CHjSiA8xL0@cluster0.ak7pvx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    'mongodb+srv://ANKIT:mkf0CHjSiA8xL0@cluster0.aqk7pvx.mongodb.net/idhub?retryWrites=true&w=majority&appName=Cluster0',
+    { useNewUrlParser: true, useUnifiedTopology: true }
+  )
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
+// Rest of your code...',
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
   .then(() => console.log('Connected to MongoDB'))
