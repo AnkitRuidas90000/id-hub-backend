@@ -24,6 +24,11 @@ mongoose
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+// Log MongoDB connection errors
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
 // Request Schema
 const requestSchema = new mongoose.Schema({
   gameName: String,
@@ -54,27 +59,34 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Routes
+console.log('Setting up routes...'); // Add this to confirm routes are being loaded
+
 app.post('/api/requests', async (req, res) => {
+  console.log('Received POST /api/requests:', req.body); // Log incoming request
   try {
     const { gameName, appId, comments } = req.body;
     const newRequest = new Request({ gameName, appId, comments });
     await newRequest.save();
     res.status(201).json({ message: 'Request submitted successfully!' });
   } catch (err) {
+    console.error('Error in POST /api/requests:', err); // Detailed error logging
     res.status(500).json({ error: 'Failed to submit request' });
   }
 });
 
 app.get('/api/requests', async (req, res) => {
+  console.log('Received GET /api/requests'); // Log incoming request
   try {
     const requests = await Request.find();
     res.json(requests);
   } catch (err) {
+    console.error('Error in GET /api/requests:', err); // Detailed error logging
     res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
 
 app.post('/api/files', upload.single('file'), async (req, res) => {
+  console.log('Received POST /api/files:', req.body); // Log incoming request
   try {
     const { gameName, appId } = req.body;
     const filePath = req.file.path;
@@ -82,15 +94,18 @@ app.post('/api/files', upload.single('file'), async (req, res) => {
     await newFile.save();
     res.status(201).json({ message: 'File uploaded successfully!' });
   } catch (err) {
+    console.error('Error in POST /api/files:', err); // Detailed error logging
     res.status(500).json({ error: 'Failed to upload file' });
   }
 });
 
 app.get('/api/files', async (req, res) => {
+  console.log('Received GET /api/files'); // Log incoming request
   try {
     const files = await File.find();
     res.json(files);
   } catch (err) {
+    console.error('Error in GET /api/files:', err); // Detailed error logging
     res.status(500).json({ error: 'Failed to fetch files' });
   }
 });
