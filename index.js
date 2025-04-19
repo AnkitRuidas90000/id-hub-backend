@@ -1,102 +1,92 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const multer = require('multer');
 mongoose.set('strictQuery', true); // Fix the strictQuery warning
+
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect(
-    'mongodb+srv://ANKIT:mkf0CHjSiA8xL0@cluster0.aqk7pvx.mongodb.net/idhub?retryWrites=true&w=majority&appName=Cluster0',
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
+  .connect(process.env.MONGODB_URI || 'mongodb://ANKIT:GnWnPUeqfgDJMttX@ac-h8ek3ux-shard-00-00.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-01.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-02.aqk7pvx.mongodb.net:27017/idhub?ssl=true&replicaSet=atlas-osji8u-shard-0&authSource=admin&retryWrites=true&w=majority')
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
-
-// Rest of your code...',
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
-// File Schema
-const fileSchema = new mongoose.Schema({
-  gameName: String,
-  appId: String,
-  downloadUrl: String,
-  createdAt: { type: Date, default: Date.now }
-});
-const File = mongoose.model('File', fileSchema);
 
 // Request Schema
 const requestSchema = new mongoose.Schema({
   gameName: String,
   appId: String,
   comments: String,
-  createdAt: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now }
 });
 const Request = mongoose.model('Request', requestSchema);
 
-// Routes for Files (Recently Uploaded and Search)
-app.get('/api/files', async (req, res) => {
+// File Schema
+const fileSchema = new mongoose.Schema({
+  gameName: String,
+  appId: String,
+  filePath: String,
+  timestamp: { type: Date, default: Date.now }
+});
+const File = mongoose.model('File', fileSchema);
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage: storage });
+
+// Routes
+app.post('/api/requests', async (req, res) => {
   try {
-    const { appId } = req.query;
-    const query = appId ? { appId } : {};
-    const files = await File.find(query);
-    res.json(files);
-  } catch (error) {
-    console.error('Error fetching files:', error);
-    res.status(500).json({ message: 'Error fetching files' });
+    const { gameName, appId, comments } = req.body;
+    const newRequest = new Request({ gameName, appId, comments });
+    await newRequest.save();
+    res.status(201).json({ message: 'Request submitted successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to submit request' });
   }
 });
 
-// Route for File Upload (Admin Panel)
-app.post('/api/files', async (req, res) => {
-  try {
-    const { gameName, appId, downloadUrl } = req.body;
-    if (!gameName || !appId || !downloadUrl) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-    const file = new File({ gameName, appId, downloadUrl });
-    await file.save();
-    res.json({ message: 'File uploaded successfully!' });
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    res.status(500).json({ message: 'Error uploading file' });
-  }
-});
-
-// Routes for Requests (Request Games)
 app.get('/api/requests', async (req, res) => {
   try {
     const requests = await Request.find();
     res.json(requests);
-  } catch (error) {
-    console.error('Error fetching requests:', error);
-    res.status(500).json({ message: 'Error fetching requests' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
 
-app.post('/api/requests', async (req, res) => {
+app.post('/api/files', upload.single('file'), async (req, res) => {
   try {
-    const { gameName, appId, comments } = req.body;
-    if (!gameName) {
-      return res.status(400).json({ message: 'Game Name is required' });
-    }
-    const request = new Request({ gameName, appId, comments });
-    await request.save();
-    res.json({ message: 'Request submitted successfully!' });
-  } catch (error) {
-    console.error('Error submitting request:', error);
-    res.status(500).json({ message: 'Error submitting request' });
+    const { gameName, appId } = req.body;
+    const filePath = req.file.path;
+    const newFile = new File({ gameName, appId, filePath });
+    await newFile.save();
+    res.status(201).json({ message: 'File uploaded successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to upload file' });
   }
 });
 
-// Start the Server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.get('/api/files', async (req, res) => {
+  try {
+    const files = await File.find();
+    res.json(files);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch files' });
+  }
 });
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
