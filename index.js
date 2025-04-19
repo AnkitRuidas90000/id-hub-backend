@@ -1,24 +1,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
-const cors = require('cors');
-
+const cors = require('cors'); // Add CORS
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
 
-// Cloudinary Config
-cloudinary.config({
-  cloud_name: 'clodki3jmtpfud',
-  api_key: '933819123159934',
-  api_secret: 'cKnHvPSs2tpnW79c8n3-gZaRorM'
-});
+// Middleware
+app.use(cors()); // Allow frontend to call backend
+app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect('mongodb+srv://ANKIT:mkfoCHjsIIAbxLMO@cluster0.aqk7pvx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+mongoose
+  .connect(
+    'mongodb+srv://ANKIT:mkf0CHjSiA8xL0@cluster0.ak7pvx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    { useNewUrlParser: true, useUnifiedTopology: true }
+  )
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((err) => console.error('MongoDB connection error:', err));
 
 // File Schema
 const fileSchema = new mongoose.Schema({
@@ -38,56 +34,63 @@ const requestSchema = new mongoose.Schema({
 });
 const Request = mongoose.model('Request', requestSchema);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-
-// Upload API
-app.post('/api/upload', upload.single('file'), async (req, res) => {
+// Routes for Files (Recently Uploaded and Search)
+app.get('/api/files', async (req, res) => {
   try {
-    const { gameName, appId } = req.body;
-    const file = req.file;
+    const { appId } = req.query;
+    const query = appId ? { appId } : {};
+    const files = await File.find(query);
+    res.json(files);
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    res.status(500).json({ message: 'Error fetching files' });
+  }
+});
 
-    // Upload to Cloudinary
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'id-hub-files', resource_type: 'raw' },
-        (error, result) => {
-          if (error) reject(error);
-          resolve(result);
-        }
-      );
-      stream.end(file.buffer);
-    });
-
-    // Save to MongoDB
-    const newFile = new File({ gameName, appId, downloadUrl: result.secure_url });
-    await newFile.save();
-
+// Route for File Upload (Admin Panel)
+app.post('/api/files', async (req, res) => {
+  try {
+    const { gameName, appId, downloadUrl } = req.body;
+    if (!gameName || !appId || !downloadUrl) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    const file = new File({ gameName, appId, downloadUrl });
+    await file.save();
     res.json({ message: 'File uploaded successfully!' });
   } catch (error) {
+    console.error('Error uploading file:', error);
     res.status(500).json({ message: 'Error uploading file' });
   }
 });
 
-// Get Files API
-app.get('/api/files', async (req, res) => {
-  const { appId } = req.query;
-  const files = await File.find(appId ? { appId } : {}).sort({ createdAt: -1 });
-  res.json(files);
+// Routes for Requests (Request Games)
+app.get('/api/requests', async (req, res) => {
+  try {
+    const requests = await Request.find();
+    res.json(requests);
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ message: 'Error fetching requests' });
+  }
 });
 
-// Request Game API
 app.post('/api/requests', async (req, res) => {
   try {
     const { gameName, appId, comments } = req.body;
-    const newRequest = new Request({ gameName, appId, comments });
-    await newRequest.save();
-    res.json({ message: 'Game request submitted successfully!' });
+    if (!gameName) {
+      return res.status(400).json({ message: 'Game Name is required' });
+    }
+    const request = new Request({ gameName, appId, comments });
+    await request.save();
+    res.json({ message: 'Request submitted successfully!' });
   } catch (error) {
+    console.error('Error submitting request:', error);
     res.status(500).json({ message: 'Error submitting request' });
   }
 });
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+// Start the Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
