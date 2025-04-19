@@ -12,7 +12,7 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://ANKIT:GnWnPUeqfgDJMttX@ac-h8ek3ux-shard-00-00.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-01.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-02.aqk7pvx.mongodb.net:27017/idhub?ssl=true&replicaSet=atlas-osji8u-shard-0&authSource=admin&retryWrites=true&w=majority')
+  .connect(process.env.MONGODB_URI || 'mongodb://ANKIT:Sh9WH35UJFquBDId@ac-h8ek3ux-shard-00-00.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-01.aqk7pvx.mongodb.net:27017,ac-h8ek3ux-shard-00-02.aqk7pvx.mongodb.net:27017/idhub?ssl=true&replicaSet=atlas-osji8u-shard-0&authSource=admin&retryWrites=true&w=majority')
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
